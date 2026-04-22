@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>예인인테리어 블로그 자동화</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brown-dark: #2a2520;
+    --brown-mid: #5a4a3a;
+    --brown: #8b7355;
+    --brown-light: #c4a882;
+    --cream: #f5f0eb;
+    --cream-mid: #faf8f5;
+    --border: #e8e0d5;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--cream);
+    min-height: 100vh;
+    color: var(--brown-dark);
+  }
+
+  .app {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+    animation: fadeIn 0.5s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  /* ── API KEY GATE ── */
+  #api-gate {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .gate-card {
+    background: white;
+    border-radius: 20px;
+    padding: 48px 40px;
+    max-width: 460px;
+    width: 100%;
+    box-shadow: 0 4px 40px rgba(139,115,85,0.12);
+    text-align: center;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .gate-brand { font-family: 'Noto Serif KR', serif; font-size: 12px; letter-spacing: 4px; color: var(--brown); margin-bottom: 12px; }
+  .gate-title { font-family: 'Noto Serif KR', serif; font-size: 22px; font-weight: 700; color: var(--brown-dark); margin-bottom: 8px; }
+  .gate-sub { font-size: 13px; color: #a09080; margin-bottom: 32px; line-height: 1.6; }
+
+  .gate-divider { width: 40px; height: 2px; background: var(--brown-light); margin: 0 auto 28px; }
+
+  .gate-label { font-size: 11px; font-weight: 700; color: var(--brown); letter-spacing: 1px; text-align: left; display: block; margin-bottom: 8px; }
+
+  .gate-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    background: var(--cream-mid);
+    color: var(--brown-dark);
+    outline: none;
+    transition: border-color 0.2s;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .gate-input:focus { border-color: var(--brown); background: white; }
+
+  .gate-hint { font-size: 11px; color: #b0a090; text-align: left; margin-bottom: 24px; line-height: 1.5; }
+  .gate-hint a { color: var(--brown); text-decoration: none; }
+
+  .gate-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--brown), #6b5840);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .gate-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139,115,85,0.3); }
+
+  .gate-error { font-size: 12px; color: #c05050; margin-top: 10px; display: none; }
+
+  /* ── MAIN APP ── */
+  #main-app { display: none; }
+
+  .header { text-align: center; margin-bottom: 36px; }
+  .brand { font-family: 'Noto Serif KR', serif; font-size: 12px; letter-spacing: 4px; color: var(--brown); margin-bottom: 10px; }
+  .title { font-family: 'Noto Serif KR', serif; font-size: 26px; font-weight: 700; line-height: 1.3; margin-bottom: 8px; }
+  .subtitle { font-size: 13px; color: var(--brown); font-weight: 300; }
+  .divider { width: 40px; height: 2px; background: var(--brown-light); margin: 14px auto; }
+
+  .api-indicator {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; color: #5a8a5a; background: #edf7ed;
+    padding: 4px 12px; border-radius: 20px; margin-top: 10px; cursor: pointer;
+  }
+  .api-indicator:hover { background: #dff0df; }
+
+  /* Mode tabs */
+  .mode-tabs { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+
+  .mode-tab {
+    flex: 1; min-width: 160px;
+    padding: 14px 16px;
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .mode-tab:hover { border-color: var(--brown-light); }
+  .mode-tab.active { border-color: var(--brown); background: #faf6f1; }
+  .mode-tab-label { font-size: 14px; font-weight: 700; color: var(--brown-dark); margin-bottom: 4px; }
+  .mode-tab-desc { font-size: 11px; color: #a09080; line-height: 1.4; }
+
+  /* Card */
+  .card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 2px 20px rgba(139,115,85,0.08); margin-bottom: 20px; }
+  .card-title { font-family: 'Noto Serif KR', serif; font-size: 15px; font-weight: 600; color: var(--brown-mid); margin-bottom: 20px; }
+
+  /* Form */
+  .form-section { display: flex; flex-direction: column; gap: 16px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 500px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label { font-size: 12px; font-weight: 700; color: var(--brown-mid); letter-spacing: 0.5px; }
+  .optional { font-weight: 400; color: #a09080; }
+
+  input[type=text], select, textarea {
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    color: var(--brown-dark);
+    background: var(--cream-mid);
+    transition: border-color 0.2s;
+    outline: none;
+    resize: vertical;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--brown); background: white; }
+
+  /* Photo upload */
+  .drop-zone {
+    border: 2px dashed #d4c4b0; border-radius: 12px;
+    padding: 32px 20px; text-align: center;
+    cursor: pointer; transition: all 0.2s; background: var(--cream-mid);
+  }
+  .drop-zone:hover, .drop-zone.dragging { border-color: var(--brown); background: #f5ede0; }
+  .drop-icon { font-size: 34px; margin-bottom: 10px; }
+  .drop-text { font-size: 14px; font-weight: 500; color: var(--brown-mid); margin-bottom: 4px; }
+  .drop-sub { font-size: 12px; color: #a09080; }
+
+  .photo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+  @media (max-width: 500px) { .photo-grid { grid-template-columns: repeat(3, 1fr); } }
+  .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--border); }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .remove-btn {
+    position: absolute; top: 4px; right: 4px;
+    width: 20px; height: 20px;
+    background: rgba(0,0,0,0.6); color: white;
+    border: none; border-radius: 50%; font-size: 10px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Generate */
+  .generate-btn {
+    width: 100%; padding: 18px;
+    background: linear-gradient(135deg, var(--brown), #6b5840);
+    color: white; border: none; border-radius: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+  }
+  .generate-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(139,115,85,0.3); }
+  .generate-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  /* Loading */
+  .loading-box { text-align: center; padding: 40px; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid var(--border);
+    border-top-color: var(--brown);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--brown); font-weight: 500; }
+
+  /* Result */
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .result-badge { font-size: 13px; font-weight: 700; color: #5a8a5a; background: #edf7ed; padding: 6px 14px; border-radius: 20px; }
+  .reset-btn {
+    padding: 6px 14px; border: 1.5px solid var(--border);
+    border-radius: 20px; background: white; font-size: 13px;
+    cursor: pointer; color: var(--brown); font-family: 'Noto Sans KR', sans-serif;
+    transition: border-color 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--brown); }
+
+  .result-block { background: var(--cream-mid); border: 1.5px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; }
+  .result-label { font-size: 11px; font-weight: 700; color: var(--brown); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .copy-btn {
+    padding: 3px 10px; border: 1px solid var(--brown-light);
+    border-radius: 4px; background: white; font-size: 11px;
+    cursor: pointer; color: var(--brown); font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s;
+  }
+  .copy-btn.copied { background: var(--brown); color: white; border-color: var(--brown); }
+
+  .result-title { font-family: 'Noto Serif KR', serif; font-size: 17px; font-weight: 600; line-height: 1.5; }
+  .tags-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { background: #ede8e0; color: var(--brown-mid); font-size: 12px; padding: 4px 10px; border-radius: 20px; }
+
+  .result-body { max-height: 380px; overflow-y: auto; font-size: 14px; line-height: 1.9; color: #3a3028; }
+  .body-h1 { font-size: 16px; font-weight: 700; color: var(--brown-dark); margin: 14px 0 6px; }
+  .body-h2 { font-size: 14px; font-weight: 700; color: var(--brown-mid); margin: 10px 0 4px; }
+  .body-p { margin: 3px 0; }
+
+  .summary-block { background: #f0e8dc; border-color: var(--brown-light); font-size: 13px; color: #6b5840; font-style: italic; }
+
+  .copy-all-btn {
+    width: 100%; padding: 15px;
+    background: white; border: 2px solid var(--brown);
+    border-radius: 12px; font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px; font-weight: 700; color: var(--brown);
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px;
+  }
+  .copy-all-btn:hover { background: var(--brown); color: white; }
+
+  .error-box { background: #fff0f0; border: 1.5px solid #f0c0c0; border-radius: 10px; padding: 14px 18px; font-size: 13px; color: #c05050; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ── API KEY GATE ── -->
+<div id="api-gate">
+  <div class="gate-card">
+    <div class="gate-brand">YEIN INTERIOR</div>
+    <h1 class="gate-title">블로그 자동화 시스템</h1>
+    <div class="gate-divider"></div>
+    <p class="gate-sub">사용하려면 Claude API 키를 입력하세요.<br>키는 이 기기에만 저장되고 외부로 전송되지 않아요.</p>
+    <label class="gate-label">CLAUDE API KEY</label>
+    <input class="gate-input" id="api-key-input" type="password" placeholder="sk-ant-api03-..." />
+    <p class="gate-hint">
+      API 키가 없으면 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>에서 발급받으세요.<br>
+      입력한 키는 브라우저에만 저장되며 서버로 전송되지 않습니다.
+    </p>
+    <button class="gate-btn" onclick="handleApiKeySubmit()">시작하기 →</button>
+    <p class="gate-error" id="gate-error">API 키 형식이 올바르지 않아요. sk-ant-로 시작해야 해요.</p>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="main-app">
+  <div class="app">
+    <div class="header">
+      <div class="brand">예인인테리어</div>
+      <h1 class="title">네이버 블로그<br>자동 글 생성기</h1>
+      <div class="divider"></div>
+      <p class="subtitle">시공 사진이나 주제를 입력하면 Claude가 블로그 글을 완성해드려요</p>
+      <div class="api-indicator" onclick="changeApiKey()">🔑 API 키 연결됨 · 변경하기</div>
+    </div>
+
+    <!-- Mode tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="setMode('construction', this)">
+        <div class="mode-tab-label">🏠 시공 사례 포스팅</div>
+        <div class="mode-tab-desc">시공 사진 + 현장 정보로 블로그 글 생성</div>
+      </button>
+      <button class="mode-tab" onclick="setMode('info', this)">
+        <div class="mode-tab-label">📖 인테리어 정보글</div>
+        <div class="mode-tab-desc">키워드/주제로 정보성 블로그 글 생성</div>
+      </button>
+      <button class="mode-tab" onclick="setMode('trend', this)">
+        <div class="mode-tab-label">📰 인테리어 트렌드</div>
+        <div class="mode-tab-desc">최신 인테리어 이슈·트렌드 소개 글 생성</div>
+      </button>
+    </div>
+
+    <!-- Forms -->
+    <div class="card" id="form-card">
+      <div class="card-title" id="form-card-title">🏠 시공 정보 입력</div>
+
+      <!-- Construction -->
+      <div id="form-construction" class="form-section">
+        <div id="drop-zone" class="drop-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave()" ondrop="onDrop(event)" onclick="document.getElementById('photo-input').click()">
+          <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)" />
+          <div class="drop-icon">📷</div>
+          <div class="drop-text">시공 사진을 드래그하거나 클릭해서 업로드</div>
+          <div class="drop-sub">최대 10장 · JPG, PNG, WEBP</div>
+        </div>
+        <div class="photo-grid" id="photo-grid"></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>공간 유형</label>
+            <select id="c-room">
+              <option value="">선택</option>
+              <option>거실</option><option>주방</option><option>침실</option>
+              <option>욕실</option><option>전체 리모델링</option><option>상업공간</option>
+              <option>사무실</option><option>기타</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>인테리어 스타일</label>
+            <select id="c-style">
+              <option value="">선택</option>
+              <option>모던/미니멀</option><option>북유럽 스칸디</option><option>내추럴/우드</option>
+              <option>클래식/고급</option><option>빈티지/레트로</option><option>인더스트리얼</option><option>아파트 올인원</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>시공 면적</label>
+            <input type="text" id="c-area" placeholder="예: 32평, 85㎡" />
+          </div>
+          <div class="form-group">
+            <label>시공 지역</label>
+            <input type="text" id="c-location" placeholder="예: 인천 서구, 부평구" />
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>시공 포인트 / 특이사항 <span class="optional">(선택)</span></label>
+          <textarea id="c-points" rows="3" placeholder="예: 주방과 거실 터서 오픈형으로 변경, 욕실 방수 재시공..."></textarea>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div id="form-info" class="form-section" style="display:none">
+        <div class="form-group full">
+          <label>글 주제 / 키워드</label>
+          <input type="text" id="i-keyword" placeholder="예: 아파트 거실 인테리어 비용, 셀프 도배 방법" />
+        </div>
+        <div class="form-group full">
+          <label>추가로 다루고 싶은 내용 <span class="optional">(선택)</span></label>
+          <textarea id="i-extra" rows="3" placeholder="예: 비용 절감 팁 포함, 초보자도 이해하기 쉽게..."></textarea>
+        </div>
+      </div>
+
+      <!-- Trend -->
+      <div id="form-trend" class="form-section" style="display:none">
+        <div class="form-group full">
+          <label>다루고 싶은 트렌드 / 이슈</label>
+          <input type="text" id="t-trend" placeholder="예: 2025 인테리어 트렌드, 친환경 마감재" />
+        </div>
+        <div class="form-group full">
+          <label>톤 & 방향 <span class="optional">(선택)</span></label>
+          <textarea id="t-tone" rows="2" placeholder="예: 전문가 관점으로 트렌드 분석, 실용 정보 위주..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div id="error-box" class="error-box" style="display:none"></div>
+
+    <!-- Loading -->
+    <div id="loading-box" class="card" style="display:none">
+      <div class="loading-box">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-text">글 생성 중...</div>
+      </div>
+    </div>
+
+    <!-- Generate button -->
+    <button class="generate-btn" id="gen-btn" onclick="handleGenerate()">✨ 블로그 글 생성하기</button>
+
+    <!-- Result -->
+    <div class="card" id="result-card" style="display:none">
+      <div class="result-header">
+        <span class="result-badge">✅ 블로그 글 완성</span>
+        <button class="reset-btn" onclick="resetResult()">🔄 다시 생성</button>
+      </div>
+      <div class="result-block">
+        <div class="result-label">제목 <button class="copy-btn" id="copy-title" onclick="copyField('title')">복사</button></div>
+        <div class="result-title" id="res-title"></div>
+      </div>
+      <div class="result-block">
+        <div class="result-label">태그 <button class="copy-btn" id="copy-tags" onclick="copyField('tags')">복사</button></div>
+        <div class="tags-wrap" id="res-tags"></div>
+      </div>
+      <div class="result-block">
+        <div class="result-label">본문 <button class="copy-btn" id="copy-body" onclick="copyField('body')">복사</button></div>
+        <div class="result-body" id="res-body"></div>
+      </div>
+      <div class="result-block summary-block">
+        💡 <span id="res-summary"></span>
+      </div>
+      <button class="copy-all-btn" id="copy-all-btn" onclick="copyAll()">📋 전체 복사 (네이버 붙여넣기용)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  let apiKey = sessionStorage.getItem('yein_api_key') || '';
+  let currentMode = 'construction';
+  let photos = []; // [{file, url, base64}]
+  let lastResult = null;
+
+  // ── API Gate ──
+  if (apiKey) showApp();
+
+  function handleApiKeySubmit() {
+    const val = document.getElementById('api-key-input').value.trim();
+    const err = document.getElementById('gate-error');
+    if (!val.startsWith('sk-ant-')) {
+      err.style.display = 'block';
+      return;
+    }
+    err.style.display = 'none';
+    apiKey = val;
+    sessionStorage.setItem('yein_api_key', val);
+    showApp();
+  }
+
+  document.getElementById('api-key-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleApiKeySubmit();
+  });
+
+  function showApp() {
+    document.getElementById('api-gate').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+  }
+
+  function changeApiKey() {
+    sessionStorage.removeItem('yein_api_key');
+    apiKey = '';
+    document.getElementById('api-gate').style.display = 'flex';
+    document.getElementById('main-app').style.display = 'none';
+    document.getElementById('api-key-input').value = '';
+  }
+
+  // ── Mode ──
+  function setMode(mode, btn) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    ['construction','info','trend'].forEach(m => {
+      document.getElementById('form-' + m).style.display = m === mode ? 'flex' : 'none';
+    });
+    const titles = { construction: '🏠 시공 정보 입력', info: '📖 정보글 주제 입력', trend: '📰 트렌드 주제 입력' };
+    document.getElementById('form-card-title').textContent = titles[mode];
+    photos = [];
+    renderPhotos();
+    resetResult();
+  }
+
+  // ── Photo Upload ──
+  function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragging'); }
+  function onDragLeave() { document.getElementById('drop-zone').classList.remove('dragging'); }
+  function onDrop(e) { e.preventDefault(); onDragLeave(); handleFiles(e.dataTransfer.files); }
+
+  function handleFiles(files) {
+    const arr = Array.from(files).slice(0, 10 - photos.length);
+    const readers = arr.map(f => new Promise(res => {
+      const r = new FileReader();
+      r.onload = e => res({ file: f, url: e.target.result, base64: e.target.result.split(',')[1] });
+      r.readAsDataURL(f);
+    }));
+    Promise.all(readers).then(results => {
+      photos = [...photos, ...results].slice(0, 10);
+      renderPhotos();
+    });
+  }
+
+  function removePhoto(i) {
+    photos.splice(i, 1);
+    renderPhotos();
+  }
+
+  function renderPhotos() {
+    const grid = document.getElementById('photo-grid');
+    grid.innerHTML = photos.map((p, i) => `
+      <div class="photo-thumb">
+        <img src="${p.url}" />
+        <button class="remove-btn" onclick="removePhoto(${i})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  // ── Prompt Builder ──
+  function buildPrompt() {
+    const base = `당신은 인테리어 업체 "예인인테리어"의 네이버 블로그 전문 에디터입니다.
+전문적이면서도 친근한 톤으로, 실제 고객에게 도움이 되는 블로그 글을 작성합니다.
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요:
+{"title":"SEO 최적화 제목 (30자 내외)","tags":["태그1","태그2","태그3","태그4","태그5","태그6","태그7","태그8","태그9","태그10"],"body":"본문 전체 (마크다운 형식, 2000~3000자)","summary":"한 줄 요약 (50자 내외)"}`;
+
+    if (currentMode === 'construction') {
+      const room = document.getElementById('c-room').value;
+      const style = document.getElementById('c-style').value;
+      const area = document.getElementById('c-area').value;
+      const loc = document.getElementById('c-location').value;
+      const pts = document.getElementById('c-points').value;
+      return base + `\n\n[시공 사례 포스팅]\n공간:${room} 스타일:${style} 면적:${area} 지역:${loc} 포인트:${pts||'없음'} 사진:${photos.length}장\n구조: 인사말→시공 전→시공 과정→완성 결과→예인인테리어 문의 유도. 사진 위치는 [사진1],[사진2]로 표시.`;
+    }
+    if (currentMode === 'info') {
+      const kw = document.getElementById('i-keyword').value;
+      const ex = document.getElementById('i-extra').value;
+      return base + `\n\n[정보성 글]\n주제:${kw} 추가:${ex||'없음'}\n구조: 도입(공감)→핵심정보3~5가지→실용팁→예인인테리어 마무리`;
+    }
+    if (currentMode === 'trend') {
+      const tr = document.getElementById('t-trend').value;
+      const to = document.getElementById('t-tone').value;
+      return base + `\n\n[트렌드 소개]\n주제:${tr} 방향:${to||'없음'}\n구조: 트렌드 배경→주요특징→실제 적용→예인인테리어 연결`;
+    }
+  }
+
+  function canGenerate() {
+    if (currentMode === 'construction') return document.getElementById('c-room').value || photos.length > 0;
+    if (currentMode === 'info') return document.getElementById('i-keyword').value.trim();
+    if (currentMode === 'trend') return document.getElementById('t-trend').value.trim();
+    return false;
+  }
+
+  // ── Generate ──
+  async function handleGenerate() {
+    if (!canGenerate()) {
+      showError('필수 정보를 입력해주세요.');
+      return;
+    }
+    hideError();
+    setLoading(true);
+
+    const steps = ['✍️ 프롬프트 구성 중...', '🤖 Claude가 글을 쓰고 있어요...', '🔍 SEO 태그 최적화 중...', '✅ 거의 다 됐어요!'];
+    let si = 0;
+    const iv = setInterval(() => { if (si < steps.length) document.getElementById('loading-text').textContent = steps[si++]; }, 1800);
+
+    try {
+      const prompt = buildPrompt();
+      let content = [];
+
+      if (currentMode === 'construction' && photos.length > 0) {
+        photos.slice(0, 3).forEach(p => {
+          content.push({ type: 'image', source: { type: 'base64', media_type: p.file.type || 'image/jpeg', data: p.base64 } });
+        });
+      }
+      content.push({ type: 'text', text: prompt });
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content }] })
+      });
+
+      if (res.status === 401) throw new Error('API 키가 올바르지 않아요. 다시 확인해주세요.');
+      if (!res.ok) throw new Error(`API 오류 (${res.status})`);
+
+      const data = await res.json();
+      clearInterval(iv);
+      const text = data.content.map(c => c.text || '').join('');
+      const clean = text.replace(/```json|```/g, '').trim();
+      lastResult = JSON.parse(clean);
+      showResult(lastResult);
+    } catch (e) {
+      clearInterval(iv);
+      showError('오류: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── UI helpers ──
+  function setLoading(on) {
+    document.getElementById('loading-box').style.display = on ? 'block' : 'none';
+    document.getElementById('gen-btn').style.display = on ? 'none' : 'block';
+    document.getElementById('form-card').style.display = on ? 'none' : 'block';
+    document.querySelectorAll('.mode-tabs')[0].style.display = on ? 'none' : 'flex';
+    if (!on) document.getElementById('result-card').style.display = 'none';
+  }
+
+  function showResult(r) {
+    document.getElementById('form-card').style.display = 'none';
+    document.getElementById('gen-btn').style.display = 'none';
+    document.querySelectorAll('.mode-tabs')[0].style.display = 'none';
+
+    document.getElementById('res-title').textContent = r.title;
+    document.getElementById('res-tags').innerHTML = r.tags.map(t => `<span class="tag">#${t}</span>`).join('');
+    document.getElementById('res-body').innerHTML = r.body.split('\n').map(line => {
+      if (line.startsWith('## ')) return `<p class="body-h1">${line.replace(/^## /, '')}</p>`;
+      if (line.startsWith('# ')) return `<p class="body-h1">${line.replace(/^# /, '')}</p>`;
+      if (line.startsWith('### ')) return `<p class="body-h2">${line.replace(/^### /, '')}</p>`;
+      return `<p class="body-p">${line}</p>`;
+    }).join('');
+    document.getElementById('res-summary').textContent = r.summary;
+    document.getElementById('result-card').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetResult() {
+    document.getElementById('result-card').style.display = 'none';
+    document.getElementById('form-card').style.display = 'block';
+    document.getElementById('gen-btn').style.display = 'block';
+    document.querySelectorAll('.mode-tabs')[0].style.display = 'flex';
+    lastResult = null;
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('error-box');
+    box.textContent = '⚠️ ' + msg;
+    box.style.display = 'block';
+  }
+  function hideError() { document.getElementById('error-box').style.display = 'none'; }
+
+  function copyField(field) {
+    if (!lastResult) return;
+    let text = '';
+    const btnId = 'copy-' + field;
+    if (field === 'title') text = lastResult.title;
+    if (field === 'tags') text = lastResult.tags.map(t => '#' + t).join(' ');
+    if (field === 'body') text = lastResult.body;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById(btnId);
+      btn.textContent = '복사됨!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  function copyAll() {
+    if (!lastResult) return;
+    const text = `[제목]\n${lastResult.title}\n\n[태그]\n${lastResult.tags.map(t=>'#'+t).join(' ')}\n\n[본문]\n${lastResult.body}`;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copy-all-btn');
+      btn.textContent = '✅ 전체 복사됨!';
+      setTimeout(() => { btn.textContent = '📋 전체 복사 (네이버 붙여넣기용)'; }, 2500);
+    });
+  }
+</script>
+</body>
+</html>
